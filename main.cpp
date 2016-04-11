@@ -36,6 +36,7 @@ int8_t socket = 0;
 // Status indication
 Ticker status_ticker;
 DigitalOut status_led(LED1);
+DigitalOut command_led(LED2);
 void blinky() { status_led = !status_led; }
 
 void socket_data(void * cb)
@@ -61,9 +62,16 @@ void socket_data(void * cb)
                 sizeof(buffer) - 1);
 
         if (length) {
-            output.printf("Received message %s\r\n", buffer);
-            uint8_t * data = (uint8_t *)"Packer recieved\r\n";
+            output.printf("Received message \"%s\"\r\n", buffer);
+            uint8_t * data = (uint8_t *)"Packet recieved\r\n";
             socket_sendto(cb_res->socket_id, &source_addr, data, strlen((char*)data));
+            if (strcmp((char*)buffer, "on") == 0) {
+                command_led = 0;
+            }
+            if (strcmp((char*)buffer, "off") == 0) {
+                command_led = 1;
+            }
+
         }
     }
 
