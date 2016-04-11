@@ -31,6 +31,8 @@ Serial output(USBTX, USBRX);
 
 osThreadId mainThread;
 
+int8_t socket = 0;
+
 // Status indication
 Ticker status_ticker;
 DigitalOut status_led(LED1);
@@ -44,28 +46,24 @@ void socket_data(void * cb)
     socket_callback_t *cb_res = (socket_callback_t *)cb;
     int16_t length;
 
-    if( cb_res->event_type == SOCKET_DATA )
-    {
+    if( cb_res->socket_id != socket ) {
+        // This isn't our socket
+        output.printf("Message for wrong socket: %i\r\n", cb_res->socket_id);
+        return;
+    }
 
+    if( cb_res->event_type == SOCKET_DATA ) {
         //Read data from the RX buffer
+        memset(buffer, 0, sizeof(buffer));
         length = socket_read( cb_res->socket_id,
                 &source_addr,
                 buffer,
-                sizeof(buffer) );
-        buffer[31] = 0;
+                sizeof(buffer) - 1);
 
-        if( length )
-        {
-//            if( cb_res->socket_id == app_udp_socket )
-//            {
-//                // Handles data received in UDP socket
-//
-//                sn_nsdl_process_coap(rx_buffer, length, &sn_addr_s);
-//            }
-            output.printf("Received message %s", buffer);
+        if (length) {
+            output.printf("Received message %s\r\n", buffer);
             uint8_t * data = (uint8_t *)"Packer recieved\r\n";
             socket_sendto(cb_res->socket_id, &source_addr, data, strlen((char*)data));
-
         }
     }
 
@@ -106,7 +104,7 @@ int main() {
         output.printf("No IP address %s\r\n");
     }
 
-    int8_t socket = socket_open(SOCKET_UDP, 1234, socket_data);
+    socket = socket_open(SOCKET_UDP, 1234, socket_data);
     if (socket < 0) {
     	output.printf("Error opening socket: %i", socket);
     }
