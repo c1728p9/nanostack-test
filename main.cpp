@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2015 ARM Limited. All rights reserved.
- * SPDX-License-Identifier: Apache-2.0
- * Licensed under the Apache License, Version 2.0 (the License); you may
- * not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an AS IS BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-#include "mbed-client/m2minterfacefactory.h"
-#include "mbed-client/m2mdevice.h"
-#include "mbed-client/m2minterfaceobserver.h"
-#include "mbed-client/m2minterface.h"
-#include "mbed-client/m2mobjectinstance.h"
-#include "mbed-client/m2mresource.h"
-//#include "security.h"
+#include<stdint.h>
 
 #include "mbed.h"
 #include "rtos.h"
@@ -50,49 +29,7 @@ ThreadInterface mesh;
 
 Serial output(USBTX, USBRX);
 
-//Select binding mode: UDP or TCP
-M2MInterface::BindingMode SOCKET_MODE = M2MInterface::UDP;
-
-// This is address to mbed Device Connector
-#ifdef MESH
-const String &MBED_SERVER_ADDRESS = "coap://[2607:f0d0:2601:52::20]:5684";
-#else
-const String &MBED_SERVER_ADDRESS = "coap://api.connector.mbed.com:5684";
-#endif
-
-const String &MBED_USER_NAME_DOMAIN = 0;//MBED_DOMAIN;
-const String &ENDPOINT_NAME = 0;//MBED_ENDPOINT_NAME;
-
-const String &MANUFACTURER = "manufacturer";
-const String &TYPE = "type";
-const String &MODEL_NUMBER = "2015";
-const String &SERIAL_NUMBER = "12345";
-
-const uint8_t STATIC_VALUE[] = "mbed-client";
-
-
-#if defined(TARGET_K64F)
-#define OBS_BUTTON SW2
-#define UNREG_BUTTON SW3
-#endif
-
-// Set up Hardware interrupt button.
-InterruptIn obs_button(SW2);
-InterruptIn unreg_button(SW3);
-
-// Network interaction must be performed outside of interrupt context
-Semaphore updates(0);
-volatile bool registered = false;
 osThreadId mainThread;
-
-void unregister() {
-    registered = false;
-    updates.release();
-}
-
-void update() {
-    updates.release();
-}
 
 // Status indication
 Ticker status_ticker;
@@ -169,33 +106,13 @@ int main() {
         output.printf("No IP address %s\r\n");
     }
 
-//    void * socket = network_interface->socket_create(NSAPI_UDP);
-//    if (0 == socket) {
-//    	output.printf("Error creating socket\r\n");
-//    	while (true);
-//    }
-//
-//
-//    mesh->socket_attach_recv(socket, socket_data);
-//    mesh->socket_bind(socket, 1234);
-
-
     int8_t socket = socket_open(SOCKET_UDP, 1234, socket_data);
     if (socket < 0) {
     	output.printf("Error opening socket: %i", socket);
     }
-//    ns_address_t addr = {
-//    		ADDRESS_IPV6,
-//			{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-//			1234
-//
-//    };
-//    const uint8_t ns_in6addr_any[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-//    int8_t ret = socket_bind(socket, )
-
 
     while (true) {
-        int update = updates.wait(25000);
+        rtos::Thread::wait(1000);
     }
 
     status_ticker.detach();
