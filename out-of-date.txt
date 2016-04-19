@@ -1,0 +1,20 @@
+sal-iface-6lowpan-morpheus-private (morpheus branch)                -changed
+mbed-Client-from-source (master branch)
+mbed-mesh-api (kevin branch)                                        -changed
+
+
+
+atmel-rf-driver                                     -up to date
+coap-service                                        -up to date
+mbed-client                                         -up to date
+mbed-client-c                                                       -OUT OF DATE!
+mbed-client-classic                                 -up to date
+mbed-client-mbedtls                                                 -OUT OF DATE!                        
+mbed-client-randlib                                 -up to date
+mbed-mesh-api                                                       -OUT OF DATE!      
+mbed-trace                                                          -OUT OF DATE!
+nanostack-hal-mbed-cmsis-rtos                       -up to date
+nanostack-libservice                                -up to date
+sal-iface-6lowpan-morpheus-private                  -up to date
+sal-stack-nanostack-eventloop                       -up to date
+sal-stack-nanostack-private                                        -OUT OF DATE!

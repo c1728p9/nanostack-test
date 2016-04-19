@@ -5,6 +5,7 @@
 
 #include "net_interface.h"
 #include "socket_api.h"
+#include "UDPSocket.h"
 
 #undef ETHERNET
 #undef WIFI
@@ -77,6 +78,31 @@ void socket_data(void * cb)
 
 }
 
+void func(void);
+
+uint8_t buffer[32];
+UDPSocket sock;
+FunctionPointer fp(func);
+SocketAddress source_addr;
+uint8_t * data = NULL;
+int length = 0;
+void func(void)
+{
+//    memset(buffer, 0, sizeof(buffer));
+//    length = sock.recvfrom(&source_addr, buffer, sizeof(buffer) - 1);
+//    if (length > 0) {
+//        data = (uint8_t *)"Packet recieved\r\n";
+//        sock.sendto(source_addr, data, strlen((char*)data));
+//        if (strcmp((char*)buffer, "on") == 0) {
+//            command_led = 0;
+//        }
+//        if (strcmp((char*)buffer, "off") == 0) {
+//            command_led = 1;
+//        }
+//
+//    }
+}
+
 // Entry point to the program
 int main() {
     status_ticker.attach_us(blinky, 250000);
@@ -112,10 +138,43 @@ int main() {
         output.printf("No IP address %s\r\n");
     }
 
-    socket = socket_open(SOCKET_UDP, 1234, socket_data);
-    if (socket < 0) {
-    	output.printf("Error opening socket: %i", socket);
+//    socket = socket_open(SOCKET_UDP, 1234, socket_data);
+//    if (socket < 0) {
+//    	output.printf("Error opening socket: %i", socket);
+//    }
+
+//    TCPSocket tcp;
+//    tcp.open(network_interface);
+//    SocketAddress tcp_addr("fd00:0ff1:ce0b:a5e0:04db:d10f:949e:99fd", 1234);
+//    tcp.connect(tcp_addr);
+//    tcp.
+
+
+
+
+    sock.open(&mesh);
+    sock.attach(fp);
+    sock.bind(1234);
+
+
+    while (true) {
+        memset(buffer, 0, sizeof(buffer));
+        length = sock.recvfrom(&source_addr, buffer, sizeof(buffer) - 1);
+        if (length > 0) {
+            output.printf("Socket Addr: %s\r\n", source_addr.get_ip_address());
+            data = (uint8_t *)"Packet recieved\r\n";
+            int ret = sock.sendto(source_addr, data, strlen((char*)data));
+            output.printf("Send returned %i\r\n", ret);
+            if (strcmp((char*)buffer, "on") == 0) {
+                command_led = 0;
+            }
+            if (strcmp((char*)buffer, "off") == 0) {
+                command_led = 1;
+            }
+
+        }
     }
+
 
     while (true) {
         rtos::Thread::wait(1000);

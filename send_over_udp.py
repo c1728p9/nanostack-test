@@ -2,6 +2,7 @@ import socket
 import argparse
 
 DEFAULT_PORT = 1234
+#https://docs.python.org/2/howto/sockets.html
 
 parser = argparse.ArgumentParser(description='UDP tool')
 parser.add_argument('--port', type=int, default=DEFAULT_PORT,
@@ -17,8 +18,11 @@ addr = args.addr
 port = args.port
 data = args.data
 
-
+#HOST = socket.gethostname()
+#info = socket.getaddrinfo(HOST, 1234)
+#print("Info: %s" % info)
 sock = socket.socket(socket.AF_INET6, # Internet
                      socket.SOCK_DGRAM) # UDP
+#sock.bind(('', 1234))
 sock.sendto(data, (addr, port))
 print("Message sent")
