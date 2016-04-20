@@ -15,6 +15,9 @@ mbed-mesh-api                                                       -OUT OF DATE
 mbed-trace                                                          -OUT OF DATE!
 nanostack-hal-mbed-cmsis-rtos                       -up to date
 nanostack-libservice                                -up to date
-sal-iface-6lowpan-morpheus-private                  -up to date
+sal-iface-6lowpan-morpheus-private                  -up to date                         -NEED TO UPDATE THIS FOR NEW NSAPI (need to remove later)
 sal-stack-nanostack-eventloop                       -up to date
 sal-stack-nanostack-private                                        -OUT OF DATE!
+
+TODO:
+-Update comments in nanostack!

@@ -20,12 +20,12 @@ ESP8266Interface esp(D1, D0);
 LWIPInterface lwip;
 #elif defined (MESH_LOWPAN_ND)
 #define MESH
-#include "NanostackInterface.h"
-LoWPANNDInterface mesh;
+#include "NanostackStack.h"
+LoWPANNDStack mesh;
 #elif defined (MESH_THREAD)
 #define MESH
-#include "NanostackInterface.h"
-ThreadInterface mesh;
+#include "NanostackStack.h"
+ThreadStack mesh;
 #endif
 
 Serial output(USBTX, USBRX);
@@ -115,7 +115,7 @@ int main() {
 
     output.printf("Starting Nanostack example\r\n");
 
-    NetworkInterface *network_interface = 0;
+    NetworkStack *network_interface = 0;
 #if defined WIFI
     output.printf("\n\rUsing WiFi \r\n");
     output.printf("\n\rConnecting to WiFi..\r\n");
