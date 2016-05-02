@@ -6,11 +6,13 @@
 #include "net_interface.h"
 #include "socket_api.h"
 #include "UDPSocket.h"
+#include "TCPSocket.h"
+#include "TCPServer.h"
 
 #undef ETHERNET
 #undef WIFI
-#define MESH_LOWPAN_ND
-#undef MESH_THREAD
+#undef MESH_LOWPAN_ND
+#define MESH_THREAD
 
 #if defined WIFI
 #include "ESP8266Interface.h"
@@ -20,12 +22,12 @@ ESP8266Interface esp(D1, D0);
 LWIPInterface lwip;
 #elif defined (MESH_LOWPAN_ND)
 #define MESH
-#include "NanostackStack.h"
-LoWPANNDStack mesh;
+#include "NanostackInterface.h"
+LoWPANNDInterface mesh;
 #elif defined (MESH_THREAD)
 #define MESH
-#include "NanostackStack.h"
-ThreadStack mesh;
+#include "NanostackInterface.h"
+ThreadInterface mesh;
 #endif
 
 Serial output(USBTX, USBRX);
@@ -138,6 +140,7 @@ int main() {
         output.printf("No IP address %s\r\n");
     }
 
+
 //    socket = socket_open(SOCKET_UDP, 1234, socket_data);
 //    if (socket < 0) {
 //    	output.printf("Error opening socket: %i", socket);
@@ -149,31 +152,56 @@ int main() {
 //    tcp.connect(tcp_addr);
 //    tcp.
 
+    int ret;
+    TCPSocket tcp(network_interface);
+    TCPServer server(network_interface);
+    ret = server.bind(1234);
+    output.printf("Bind: %i\r\n", ret);
+    ret = server.listen(1);
+    output.printf("listen: %i\r\n", ret);
 
-
-
-    sock.open(&mesh);
-    sock.attach(fp);
-    sock.bind(1234);
-
-
+    TCPSocket client(network_interface);
+    ret = server.accept(&client);
+    output.printf("accept: %i\r\n", ret);
+    client.set_blocking(true);
+    client.set_timeout(1000000);
     while (true) {
-        memset(buffer, 0, sizeof(buffer));
-        length = sock.recvfrom(&source_addr, buffer, sizeof(buffer) - 1);
-        if (length > 0) {
-            output.printf("Socket Addr: %s\r\n", source_addr.get_ip_address());
-            data = (uint8_t *)"Packet recieved\r\n";
-            int ret = sock.sendto(source_addr, data, strlen((char*)data));
-            output.printf("Send returned %i\r\n", ret);
-            if (strcmp((char*)buffer, "on") == 0) {
-                command_led = 0;
-            }
-            if (strcmp((char*)buffer, "off") == 0) {
-                command_led = 1;
-            }
-
+        uint8_t data[64];
+        memset(data, 0, sizeof(data));
+        int ret = client.recv(data, sizeof(data));
+        if (ret > 0) {
+            output.printf("Read data: %s\r\n", data);
+        } else {
+            output.printf("Ret: %i\r\n", ret);
         }
+        char resp[] = "Got message";
+        ret = client.send(resp, sizeof(resp));
+        output.printf("Send ret: %i\r\n", ret);
     }
+
+
+
+
+
+//    sock.open(network_interface);
+//    sock.attach(fp);
+//    sock.bind(1234);
+//    while (true) {
+//        memset(buffer, 0, sizeof(buffer));
+//        length = sock.recvfrom(&source_addr, buffer, sizeof(buffer) - 1);
+//        if (length > 0) {
+//            output.printf("Socket Addr: %s\r\n", source_addr.get_ip_address());
+//            data = (uint8_t *)"Packet recieved\r\n";
+//            int ret = sock.sendto(source_addr, data, strlen((char*)data));
+//            output.printf("Send returned %i\r\n", ret);
+//            if (strcmp((char*)buffer, "on") == 0) {
+//                command_led = 0;
+//            }
+//            if (strcmp((char*)buffer, "off") == 0) {
+//                command_led = 1;
+//            }
+//        }
+//    }
 
 
     while (true) {
