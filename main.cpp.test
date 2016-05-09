@@ -22,6 +22,6 @@ LWIPInterface lwip;
 int main()
 {
     lwip.connect();
-    int ret = nsapi_tests("BSDInterface Tests", &lwip, "10.118.109.39", 4001);
+    int ret = nsapi_tests("BSDInterface Tests", &lwip, "10.118.106.84", 4001);
     printf("Return value: %i\r\n", ret);
 }
