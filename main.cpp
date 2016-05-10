@@ -108,6 +108,7 @@ void func(void)
 }
 
 static TCPSocket *tcp_ptr = NULL;
+static Queue<TCPSocket, 16> tcp_main_queue;
 
 void udp_main(const void *net)
 {
@@ -122,6 +123,7 @@ void udp_main(const void *net)
     //sock.attach(fp);
     sock.set_blocking(true);
     sock.bind(1234);
+    TCPSocket *local_ptr = NULL;
     while (true) {
         memset(buffer, 0, sizeof(buffer));
         length = sock.recvfrom(&source_addr, buffer, sizeof(buffer) - 1);
@@ -141,10 +143,60 @@ void udp_main(const void *net)
                     tcp_ptr->close();
                 }
             }
+            if (strcmp((char*)buffer, "close") == 0) {
+                if (local_ptr != NULL) {
+                    local_ptr->close();
+                    local_ptr = NULL;
+                }
+            }
+            uint16_t port = 0;
+            if (1 == sscanf((char*)buffer, "connect %hu", &port)) {
+                if (local_ptr != NULL) {
+                    local_ptr->close();
+                }
+                SocketAddress addr(source_addr);
+                addr.set_port(port);
+                local_ptr = new TCPSocket(network);
+                ret = local_ptr->connect(addr);
+                output.printf("Connect returned %i\r\n", ret);
+                if (0 == ret) {
+                    tcp_main_queue.put(local_ptr);
+                } else {
+                    delete local_ptr;
+                    local_ptr = NULL;
+                }
+            }
         }
     }
 }
+//tcp_main_queue.put()
+void tcp_main(const void *net)
+{
+    while (true) {
+        osEvent event = tcp_main_queue.get();
+        if (event.status != osEventMessage) {
+            output.printf("Invalid return %i\r\n", event.status);
+            continue;
+        }
+        output.printf("Socket recieved\r\n");
 
+        TCPSocket *socket = (TCPSocket *)event.value.p;
+        while (true) {
+            uint8_t data[64];
+            memset(data, 0, sizeof(data));
+            int ret = socket->recv(data, sizeof(data));
+            if (ret > 0) {
+                output.printf("Read data: %s\r\n", data);
+            } else {
+                output.printf("Ret: %i\r\n", ret);
+                break;
+            }
+            char resp[] = "Got message 2";
+            ret = socket->send(resp, sizeof(resp));
+            output.printf("Send ret: %i\r\n", ret);
+        }
+    }
+}
 
 //void socket_callback(void *cb) {
 //    socket_callback_t *sock_cb = (socket_callback_t *) cb;
@@ -258,6 +310,8 @@ int main() {
 
 
     Thread udp_thread(udp_main, (void*)network_interface);
+    Thread tcp_thread(tcp_main, (void*)network_interface);
+
 
     int ret;
     TCPServer server(network_interface);
@@ -270,6 +324,7 @@ int main() {
         TCPSocket client(network_interface);
         ret = server.accept(&client);
         output.printf("accept: %i\r\n", ret);
+        //server.close();
         client.set_blocking(true);
         tcp_ptr = &client;
         while (true) {
@@ -289,6 +344,7 @@ int main() {
         output.printf("Closing socket: %i\r\n", ret);
         tcp_ptr = NULL;
         client.close();
+        //Thread::wait(1000000);
     }
 
 
