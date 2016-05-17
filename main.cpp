@@ -124,6 +124,63 @@ void tcp_main(const void *net)
     }
 }
 
+//"-Wl,--wrap,_malloc_r", "-Wl,--wrap,_free_r", "-Wl,--wrap,_realloc_r"
+
+extern "C" void * __wrap__malloc_r (struct _reent *ptr, size_t size);
+extern "C" void __wrap__free_r (struct _reent *ptr, void *addr);
+extern "C" void * __wrap__realloc_r (struct _reent *ptr, void *old, size_t newlen);
+
+extern "C" void * __real__malloc_r (struct _reent *ptr, size_t size);
+extern "C" void __real__free_r (struct _reent *ptr, void *addr);
+extern "C" void * __real__realloc_r (struct _reent *ptr, void *old, size_t newlen);
+
+uint32_t current_size = 0;
+uint32_t max_size = 0;
+
+
+void * __wrap__malloc_r (struct _reent *ptr, size_t size)
+{
+    uint32_t *data = (uint32_t*)__real__malloc_r(ptr, size + 4);
+    if (data != NULL) {
+        *data = size;
+        data++;
+        current_size += size;
+        max_size = current_size > max_size ? current_size : max_size;
+    }
+    return data;
+}
+
+void __wrap__free_r (struct _reent *ptr, void *addr)
+{
+    uint32_t *data = (uint32_t*)addr;
+    if (data != NULL) {
+        uint32_t size;
+        data--;
+        size = *data;
+        current_size -= size;
+    }
+    __real__free_r(ptr, addr);
+}
+
+void * __wrap__realloc_r (struct _reent *ptr, void *old, size_t newlen)
+{
+    uint32_t *data = (uint32_t*)old;
+    if (data != NULL) {
+        uint32_t size;
+        data--;
+        size = *data;
+        current_size -= size;
+        data = (uint32_t*)__real__realloc_r(ptr, (void*)data, newlen + 4);
+        if (data != NULL) {
+            *data = newlen;
+            data++;
+            current_size += size;
+            max_size = current_size > max_size ? current_size : max_size;
+        }
+    }
+    return data;
+}
+
 // Entry point to the program
 int main() {
     status_ticker.attach_us(blinky, 250000);
@@ -161,7 +218,13 @@ int main() {
     Thread tcp_thread(tcp_main, (void*)network_interface);
 
     while (true) {
-        rtos::Thread::wait(1000);
+        rtos::Thread::wait(5000);
+        output.printf("Max usage: %i\r\n", max_size);
+        output.printf("Current usage: %i\r\n", current_size);
+        output.printf("TCP used stack: %i\r\n", udp_thread.used_stack());
+        output.printf("TCP max stack: %i\r\n", udp_thread.max_stack());
+        output.printf("UDP used stack: %i\r\n", tcp_thread.used_stack());
+        output.printf("UDP max stack: %i\r\n", tcp_thread.max_stack());
     }
 
     status_ticker.detach();
